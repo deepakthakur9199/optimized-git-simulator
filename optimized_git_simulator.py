@@ -12,7 +12,6 @@ class GitSimulator:
         return sha1
 
     def commit(self, changes):
-        # Basic commit functionality
         commit_hash = self.hash_object(str(changes))
         self.refs['HEAD'] = commit_hash
         return commit_hash
@@ -26,7 +25,6 @@ class OptimizedGitSimulator(GitSimulator):
         self.chunk_size = 1024 * 1024  # 1MB chunks
 
     def commit(self, changes):
-        # Improved commit process with chunked delta compression
         previous_commit = self.refs.get('HEAD')
         if previous_commit:
             previous_data = self.get_object(previous_commit)
@@ -43,10 +41,8 @@ class OptimizedGitSimulator(GitSimulator):
         for i in range(0, len(new_data), self.chunk_size):
             chunk = new_data[i:i+self.chunk_size]
             if chunk in old_data:
-                # Store reference to existing chunk
                 delta.append(f"REF:{old_data.index(chunk)}:{len(chunk)}")
             else:
-                # Compress and store new chunk
                 compressed = zlib.compress(chunk.encode())
                 delta.append(f"NEW:{len(compressed)}:{compressed.decode('latin1')}")
         return "|".join(delta)
@@ -54,7 +50,6 @@ class OptimizedGitSimulator(GitSimulator):
     def get_object(self, obj_hash):
         data = super().get_object(obj_hash)
         if data.startswith("REF:") or data.startswith("NEW:"):
-            # This is a delta, need to reconstruct
             return self.reconstruct_delta(data)
         return data
 
@@ -73,17 +68,14 @@ class OptimizedGitSimulator(GitSimulator):
                 reconstructed += decompressed.decode()
         return reconstructed
 
-# Example usage
+# Example 
 git = OptimizedGitSimulator()
 
-# First commit
 first_commit = git.commit("Initial content of a large file.")
 print(f"First commit: {first_commit}")
 
-# Second commit with changes
 second_commit = git.commit("Initial content of a large file. Some changes here.")
 print(f"Second commit: {second_commit}")
 
-# Retrieve the content of the second commit
 content = git.get_object(second_commit)
 print(f"Content of the second commit: {content}")
